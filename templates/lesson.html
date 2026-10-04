@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% block title %}{{ lesson.title }} | Avenora{% endblock %}
+{% block content %}
+<section class="lesson-page lesson-page-enhanced">
+  <div class="lesson-main">
+    <span class="eyebrow">{{ track.title|upper }} · MODULE {{ lesson.week }}</span>
+    <h1>{{ lesson.title }}</h1><p class="lead">{{ lesson.description }}</p>
+    <div class="content-card lesson-theory">
+      <span class="eyebrow">LEARNING NOTES</span><h2>{{ content.objective }}</h2>
+      <p class="lesson-body">{{ content.explanation }}</p><h3>Key concepts</h3>
+      <ul>{% for c in content.concepts %}<li>{{ c }}</li>{% endfor %}</ul>
+      <h3>Recommended resource</h3><p>Use this external learning resource as supplementary reading. Avenora does not own or guarantee third-party content.</p>
+      <p><a class="resource-link" href="{{ lesson.resource }}" target="_blank" rel="noopener noreferrer">Open documentation / reading ↗</a></p>
+      <p><a class="resource-link" href="{{ lesson.video_url }}" target="_blank" rel="noopener noreferrer">Find video lessons for this topic ↗</a></p>
+    </div>
+    <div class="content-card task-card"><span class="eyebrow">PRACTICAL TASK</span><h2>Try it yourself</h2><p>{{ lesson.task }}</p>
+      {% if lesson.hardware %}<p><strong>Suggested submission evidence:</strong> labelled circuit or block diagram, component list, simulator screenshots, troubleshooting steps, safety notes and lab report.</p>
+      {% else %}<p><strong>Suggested submission evidence:</strong> source code or design notes, screenshots where appropriate, a short explanation of your approach, and any test results.</p>{% endif %}
+    </div>
+
+    {% if lab_type == 'web' %}
+    <div class="code-lab" id="code-lab"><div class="code-lab-head"><div><span class="eyebrow">WEB DEVELOPMENT LAB</span><h2>HTML · CSS · JavaScript</h2><p>Edit the three files and run your page in the live preview. Code stays in this browser.</p></div><div class="code-actions"><button type="button" class="btn secondary" id="reset-code">Reset</button><button type="button" class="btn primary" id="run-code">▶ Run</button></div></div>
+      <div class="editor-tabs" role="tablist"><button type="button" class="editor-tab active" data-tab="html">HTML</button><button type="button" class="editor-tab" data-tab="css">CSS</button><button type="button" class="editor-tab" data-tab="js">JavaScript</button></div>
+      <div class="editor-panel active" data-panel="html"><textarea id="html-code" spellcheck="false" aria-label="HTML code"></textarea></div><div class="editor-panel" data-panel="css"><textarea id="css-code" spellcheck="false" aria-label="CSS code"></textarea></div><div class="editor-panel" data-panel="js"><textarea id="js-code" spellcheck="false" aria-label="JavaScript code"></textarea></div>
+      <div class="preview-head"><strong>Live Preview</strong><span id="run-status">Ready</span></div><div class="preview-wrap"><iframe id="code-preview" title="Live code preview" sandbox="allow-scripts"></iframe></div><div class="console-box" id="console-box" hidden></div><p class="editor-note">Practice code stays in this browser; it is not uploaded to Avenora.</p>
+    </div>
+    {% elif lab_type in ['python','datascience'] %}
+    <div class="code-lab" id="python-lab" data-lab="{{ lab_type }}"><div class="code-lab-head"><div><span class="eyebrow">{% if lab_type == 'datascience' %}AI & DATA SCIENCE LAB{% else %}PYTHON PROGRAMMING LAB{% endif %}</span><h2>Python editor</h2><p>Run Python directly in your browser using Pyodide. First load needs an internet connection. This is a learning sandbox, not a secure place for secrets.</p></div><div class="code-actions"><button type="button" class="btn secondary" id="python-reset">Reset</button><button type="button" class="btn primary" id="python-run">▶ Run Python</button></div></div>
+      <div class="python-editor-wrap"><textarea id="python-code" spellcheck="false" aria-label="Python source code">{% if lab_type == 'datascience' %}# AI & Data Science starter: inspect a tiny dataset
+rows = [
+    {"name": "Asha", "score": 82},
+    {"name": "Bala", "score": 91},
+    {"name": "Chitra", "score": 76},
+]
+average = sum(row["score"] for row in rows) / len(rows)
+print("Dataset rows:", len(rows))
+print("Average score:", round(average, 2))
+for row in rows:
+    print(row["name"], row["score"]){% else %}# Python starter: calculate a total and average
+marks = [78, 85, 92]
+total = sum(marks)
+average = total / len(marks)
+print("Total:", total)
+print("Average:", round(average, 2)){% endif %}</textarea></div>
+      <div class="preview-head"><strong>Output</strong><span id="python-status">Python runtime not loaded</span></div><pre class="python-output" id="python-output" aria-live="polite">Click “Run Python” to load the runtime and execute your code.</pre><p class="editor-note">Runs in your browser through Pyodide. Runtime downloads from the official CDN; package availability and performance depend on the browser and connection.</p>
+    </div>
+    {% elif lab_type == 'testing' %}
+    <div class="content-card task-card"><span class="eyebrow">SOFTWARE TESTING WORKBENCH</span><h2>Choose a testing tool</h2><p>Use these tools for the relevant module task. They open third-party services in a new tab; check their current terms before uploading any data.</p><div class="lab-link-grid"><a class="btn secondary" href="https://www.postman.com/" target="_blank" rel="noopener noreferrer">Postman API testing ↗</a><a class="btn secondary" href="https://playwright.dev/" target="_blank" rel="noopener noreferrer">Playwright browser testing ↗</a><a class="btn secondary" href="https://httpbin.org/" target="_blank" rel="noopener noreferrer">HTTP test service ↗</a></div><p><strong>Practice:</strong> document test steps, expected results, actual results, status code (for APIs), and any reproducible defect. Never paste private tokens or production credentials into a public tool.</p></div>
+    {% elif lab_type == 'embedded' %}
+    <div class="content-card task-card"><span class="eyebrow">EMBEDDED SYSTEMS & IoT SIMULATOR</span><h2>Build a circuit or IoT prototype</h2><p>Choose a simulator for the current task. Sign in may be required; availability and supported components are controlled by the third-party provider.</p><div class="lab-link-grid"><a class="btn secondary" href="https://www.tinkercad.com/circuits" target="_blank" rel="noopener noreferrer">Open Tinkercad Circuits ↗</a><a class="btn secondary" href="https://easyeda.com/" target="_blank" rel="noopener noreferrer">Open EasyEDA ↗</a><a class="btn secondary" href="https://wokwi.com/" target="_blank" rel="noopener noreferrer">Open Wokwi MCU simulator ↗</a></div><ul><li>Show the MCU, sensor, output and connections.</li><li>Label pins and explain the expected behavior.</li><li>Test at least two normal or fault conditions and capture screenshots.</li></ul><a class="btn secondary" href="{{ url_for('submit',track=track.slug) }}">Submit lab evidence →</a></div>
+    {% elif lab_type == 'automation' %}
+    <div class="content-card task-card"><span class="eyebrow">ELECTRICAL & INDUSTRIAL AUTOMATION LAB</span><h2>PLC and control simulation</h2><p>Use a simulator to create and test a ladder-logic or automation design. Verify the current tool's supported PLC family before starting.</p><div class="lab-link-grid"><a class="btn secondary" href="https://accautomation.ca/" target="_blank" rel="noopener noreferrer">ACC Automation resources ↗</a><a class="btn secondary" href="https://factoryio.com/" target="_blank" rel="noopener noreferrer">Factory I/O ↗</a><a class="btn secondary" href="https://www.plcfiddle.com/" target="_blank" rel="noopener noreferrer">PLC Fiddle ↗</a></div><ul><li>Draw and label the I/O list and ladder logic.</li><li>Test start/stop, interlock and fault conditions.</li><li>Record expected versus observed results and safety considerations.</li></ul><p><strong>Safety:</strong> keep practice simulated or on an authorized, de-energized training setup. Do not connect unverified code to live industrial equipment.</p><a class="btn secondary" href="{{ url_for('submit',track=track.slug) }}">Submit lab evidence →</a></div>
+    {% endif %}
+
+    <div class="content-card"><h2>Knowledge check</h2><p>Take the short knowledge check for this module before completing the lesson.</p><a class="btn secondary" href="{{ url_for('lesson_quiz',lesson_id=lesson.id) }}">Open module quiz →</a></div>
+    <div class="content-card"><h2>Module completion</h2><p>Finish the task and check your understanding before marking this module complete.</p>{% if not completed %}<form method="post" action="{{ url_for('complete_lesson',lesson_id=lesson.id) }}"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="btn primary" type="submit">Mark module complete ✓</button></form>{% else %}<div class="complete-banner">✓ You completed this module.</div>{% endif %}</div>
+  </div>
+  <aside class="lesson-side"><span class="eyebrow">YOUR TASK</span><p>{{ lesson.task }}</p><a class="btn secondary full" href="{{ url_for('track_course',slug=track.slug) }}">Back to Curriculum</a><div class="side-tip"><strong>Learning tip</strong><span>Try first, consult the resource, then explain the solution in your own words.</span></div></aside>
+</section>
+{% endblock %}
+{% block scripts %}
+{% if lab_type == 'web' %}<script>window.AVENORA_LESSON={id:{{ lesson.id|tojson }},html:{{ content.html|tojson }},css:{{ content.css|tojson }},js:{{ content.js|tojson }}};</script><script src="{{ url_for('static',filename='js/code-lab.js') }}"></script>
+{% elif lab_type in ['python','datascience'] %}<script src="{{ url_for('static',filename='js/python-lab.js') }}"></script>{% endif %}
+{% endblock %}

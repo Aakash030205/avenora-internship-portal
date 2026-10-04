@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block title %}Admin Dashboard | Avenora{% endblock %}
+{% block content %}
+<section class="page-head">
+  <div><span class="eyebrow">AVENORA ADMIN</span><h1>Portal management</h1><p>Manage course availability, pricing, payment verification and student projects.</p></div>
+</section>
+
+<section class="admin-stats">
+  <div><strong>{{ total_users }}</strong><span>Students</span></div>
+  <div><strong>{{ submissions|length }}</strong><span>Submissions</span></div>
+  <div><strong>{{ tracks|length }}</strong><span>Tracks</span></div>
+</section>
+
+<section class="admin-section">
+  <div class="section-head"><div><span class="eyebrow">COURSE CATALOG</span><h2>Internship track settings</h2><p>Change each course's access type, price and availability. Paid courses are manually verified.</p></div></div>
+  {% for t in tracks %}
+  <div class="admin-track">
+    <h3>{{ t.icon }} {{ t.title }}</h3><p>{{ t.summary }}</p>
+    <form class="small-form" method="post" action="{{ url_for('update_track', slug=t.slug) }}">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <label>Access type<select name="access_type"><option value="free" {% if t.access_type == 'free' %}selected{% endif %}>Free</option><option value="paid" {% if t.access_type == 'paid' %}selected{% endif %}>Paid</option></select></label>
+      <label>Price (₹)<input type="number" name="price" min="0" step="1" value="{{ t.price }}"></label>
+      <label>Availability<select name="active"><option value="1" {% if t.active %}selected{% endif %}>Available</option><option value="0" {% if not t.active %}selected{% endif %}>Hidden</option></select></label>
+      <button class="btn primary" type="submit">Save track</button>
+    </form>
+  </div>
+  {% endfor %}
+</section>
+
+<section class="admin-section">
+  <div class="section-head"><div><span class="eyebrow">STUDENTS</span><h2>Registered students</h2></div></div>
+  <div class="table-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>Track</th><th>Course price</th><th>Payment</th><th>Account</th><th>Joined</th><th>Action</th></tr></thead><tbody>
+  {% for s in students %}<tr>
+    <td>{{ s.name }}</td><td>{{ s.email }}</td><td>{{ s.track_title or 'Not enrolled' }}</td>
+    <td>{% if s.track_title %}{% if s.access_type == 'paid' %}₹{{ '%.2f'|format(s.track_price or 0) }}{% else %}Free{% endif %}{% else %}—{% endif %}</td>
+    <td>{{ (s.payment_status or '—')|replace('_',' ')|title }}</td><td>{{ s.account_status|title }}</td><td>{{ s.created_at[:10] }}</td>
+    <td>{% if s.account_status == 'active' %}<form method="post" action="{{ url_for('student_status', student_id=s.id) }}"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="deactivated"><button class="btn secondary" type="submit">Deactivate</button></form>{% else %}<form method="post" action="{{ url_for('student_status', student_id=s.id) }}"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="active"><button class="btn secondary" type="submit">Reactivate</button></form>{% endif %}</td>
+  </tr>{% else %}<tr><td colspan="8">No students registered.</td></tr>{% endfor %}
+  </tbody></table></div>
+</section>
+
+<section class="admin-section">
+  <div class="section-head"><div><span class="eyebrow">PAYMENT VERIFICATION</span><h2>Paid track enrollment requests</h2><p>Check your UPI/bank account and confirm the amount before approving a payment.</p></div></div>
+  {% set ns = namespace(found=false) %}
+  {% for s in students %}{% if s.payment_status == 'pending' %}{% set ns.found=true %}
+  <div class="content-card">
+    <strong>{{ s.name }}</strong> — {{ s.email }}<p><strong>Course:</strong> {{ s.track_title or 'Unknown course' }}</p>
+    <p><strong>Amount expected:</strong> ₹{{ '%.2f'|format(s.track_price or 0) }}</p>
+    <p><strong>Transaction reference:</strong> {{ s.payment_reference or 'Not submitted' }}</p>
+    {% if s.payment_receipt %}<p><a class="btn secondary" href="{{ url_for('view_payment_receipt', enrollment_id=s.enrollment_id) }}" target="_blank" rel="noopener noreferrer">View payment receipt ↗</a></p>{% endif %}
+    {% if s.payment_reference or s.payment_receipt %}<form method="post" action="{{ url_for('verify_payment', enrollment_id=s.enrollment_id) }}"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="btn primary" type="submit" onclick="return confirm('Have you confirmed the received amount and transaction in your official payment account?');">Approve payment & unlock course</button></form>{% else %}<p>Waiting for the student to submit a receipt or transaction reference.</p>{% endif %}
+  </div>
+  {% endif %}{% endfor %}
+  {% if not ns.found %}<div class="empty">No pending paid-track requests.</div>{% endif %}
+</section>
+
+<section class="admin-section">
+  <div class="section-head"><div><span class="eyebrow">EVALUATION</span><h2>Project submissions</h2></div></div>
+  {% for s in submissions %}
+  <div class="submission-card">
+    <div class="submission-head"><div><h3>{{ s.name }} · {{ s.track_title or s.track_slug }}</h3><p>{{ s.email }} · submitted {{ s.submitted_at[:16].replace('T',' ') }}</p></div><span class="status {{ s.status|lower|replace(' ','-') }}">{{ s.status }}</span></div>
+    <div class="links"><a href="{{ s.github_url }}" target="_blank" rel="noopener noreferrer">Project ↗</a>{% if s.live_url %}<a href="{{ s.live_url }}" target="_blank" rel="noopener noreferrer">Demo ↗</a>{% endif %}</div>
+    {% if s.notes %}<p><strong>Student notes:</strong> {{ s.notes }}</p>{% endif %}
+    <form method="post" action="{{ url_for('review_submission', submission_id=s.id) }}" class="review-form">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <label>Status<select name="status"><option {% if s.status == 'Pending' %}selected{% endif %}>Pending</option><option {% if s.status == 'Approved' %}selected{% endif %}>Approved</option><option {% if s.status == 'Needs Revision' %}selected{% endif %}>Needs Revision</option></select></label>
+      <label>Marks<input type="number" name="marks" min="0" max="100" value="{{ s.marks if s.marks is not none else '' }}"></label>
+      <label>Feedback<textarea name="feedback" rows="3">{{ s.feedback or '' }}</textarea></label>
+      <button class="btn primary" type="submit">Save Review</button>
+    </form>
+  </div>
+  {% else %}<div class="empty">No project submissions yet.</div>{% endfor %}
+</section>
+{% endblock %}
